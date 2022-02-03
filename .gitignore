@@ -1,0 +1,11 @@
+pgdata/
+var/
+
+db
+flake.lock
+
+*.o
+*.data
+*.index
+*.pool
+*.pdf

@@ -1,0 +1,55 @@
+digraph DB {
+    graph [ranksep=0.6]
+    node [shape=record fontname=monospace style=rounded]
+    edge [arrowhead=none arrowtail=none fontname=sans labeldistance=2]
+
+    book [label="{Видання \l
+        | ISBN \l
+        | Мова \l
+        | Рік видання \l
+        | Ціна \l
+    }"]
+
+    house [label="{Видавництво \l
+        | Назва \l
+        | Країна \l
+    }"]
+
+    text [label="{Твір \l
+        | Назва \l
+        | Рік написання \l
+    }"]
+
+    author [label="{Автор \l
+        | Ім'я (Псевдонім) \l
+    }"]
+
+    seller [label="{Продавець \l
+        | Ім'я \l
+    }"]
+
+    buyer [label="{Покупець \l
+        | Номер телефону \l
+        | Ім'я \l
+        | Накопичена знижка \l
+    }"]
+
+    node [shape=diamond]
+
+    authorship [label="Твір має авторів"]
+    authorship -> author [headlabel=∞]
+    text -> authorship [taillabel=∞]
+
+    contains [label="Видання містить твори"]
+    contains -> text [headlabel=∞]
+    book -> contains [taillabel=∞]
+
+    publishment [label="Видавництво видає видання"]
+    publishment -> book [headlabel=∞]
+    house -> publishment [taillabel=1]
+
+    purchase [label="Продаж\n Кількість примірників видань"]
+    purchase -> buyer [headlabel="1 або 0" labelangle=-60 labeldistance=3]
+    book -> purchase [taillabel=∞]
+    seller -> purchase [taillabel=∞]
+}
