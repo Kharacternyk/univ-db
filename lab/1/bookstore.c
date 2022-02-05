@@ -17,11 +17,13 @@ typedef char db_str_t[DB_STR_LEN];
 typedef int32_t db_int_t;
 
 typedef struct {
+    master_record_t meta;
     db_str_t name;
     db_str_t country;
 } publisher_t;
 
 typedef struct {
+    slave_record_t meta;
     db_str_t title;
     db_int_t year;
     db_int_t price;
@@ -63,12 +65,14 @@ int main() {
             const db_id_t id = DB_ID_TOKEN(token_queue);
 
             if (is_prefix(table, "publisher", 1)) {
-                publisher_t publisher = {};
+                publisher_t publisher = {
+                    .meta.id = id
+                };
 
                 DB_STR_TOKEN(publisher.name, token_queue);
                 DB_STR_TOKEN(publisher.country, token_queue);
 
-                if (!master_insert(db, id, &publisher)) {
+                if (!master_insert(db, (master_record_t *)&publisher)) {
                     printf("error: publisher exists\n");
                 }
 
@@ -83,7 +87,7 @@ int main() {
             if (is_prefix(table, "publisher", 1)) {
                 publisher_t publisher;
 
-                if (master_get(db, id, &publisher)) {
+                if (master_get(db, id, (master_record_t *)&publisher)) {
                     printf("name: %s\ncountry: %s\n", publisher.name, publisher.country);
                 } else {
                     printf("error: no such publisher\n");
@@ -96,7 +100,7 @@ int main() {
         if (is_prefix(operation, "count", 1)) {
             const char *table = TOKEN(token_queue);
 
-            if (is_prefix(table, "publisher", 1)) {
+            if (is_prefix(table, "publishers", 1)) {
                 printf("count: %ld\n", master_count(db));
                 goto cleanup;
             }

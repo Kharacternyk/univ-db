@@ -115,7 +115,7 @@ static void pool_add(FILE *pool, long offset) {
     FWRITE(offset, pool);
 }
 
-int master_insert(db_t db, db_id_t id, const void *data) {
+int master_insert(db_t db, const master_record_t *record) {
     const long pool_offset = pool_get(db.master.pool);
     long offset;
 
@@ -127,25 +127,25 @@ int master_insert(db_t db, db_id_t id, const void *data) {
         offset = ftell(db.master.data);
     }
 
-    if (!index_add(db.master.index, id, offset)) {
+    if (!index_add(db.master.index, record->id, offset)) {
         if (pool_offset != -1) {
             pool_add(db.master.pool, pool_offset);
         }
         return 0;
     }
 
-    fwrite(data, db.master.record_size, 1, db.master.data);
+    fwrite(record, db.master.record_size, 1, db.master.data);
     return 1;
 }
 
-int master_get(db_t db, db_id_t id, void *data) {
+int master_get(db_t db, db_id_t id, master_record_t *record) {
     const long offset = index_get(db.master.index, id, 0);
     if (offset == -1) {
         return 0;
     }
 
     fseek(db.master.data, offset, SEEK_SET);
-    fread(data, db.master.record_size, 1, db.master.data);
+    fread(record, db.master.record_size, 1, db.master.data);
     return 1;
 }
 
