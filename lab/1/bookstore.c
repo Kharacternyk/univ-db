@@ -60,15 +60,17 @@ int main() {
 
         if (is_prefix(operation, "insert", 1)) {
             const char *table = TOKEN(token_queue);
+            const db_id_t id = DB_ID_TOKEN(token_queue);
 
             if (is_prefix(table, "publisher", 1)) {
-                const db_id_t id = DB_ID_TOKEN(token_queue);
                 publisher_t publisher = {};
 
                 DB_STR_TOKEN(publisher.name, token_queue);
                 DB_STR_TOKEN(publisher.country, token_queue);
 
-                master_insert(db, id, &publisher);
+                if (!master_insert(db, id, &publisher)) {
+                    printf("error: publisher exists\n");
+                }
 
                 goto cleanup;
             }
@@ -76,9 +78,9 @@ int main() {
 
         if (is_prefix(operation, "get", 1)) {
             const char *table = TOKEN(token_queue);
+            const db_id_t id = DB_ID_TOKEN(token_queue);
 
             if (is_prefix(table, "publisher", 1)) {
-                const db_id_t id = DB_ID_TOKEN(token_queue);
                 publisher_t publisher;
 
                 if (master_get(db, id, &publisher)) {
@@ -87,6 +89,27 @@ int main() {
                     printf("error: no such publisher\n");
                 }
 
+                goto cleanup;
+            }
+        }
+
+        if (is_prefix(operation, "count", 1)) {
+            const char *table = TOKEN(token_queue);
+
+            if (is_prefix(table, "publisher", 1)) {
+                printf("count: %ld\n", master_count(db));
+                goto cleanup;
+            }
+        }
+
+        if (is_prefix(operation, "delete", 1)) {
+            const char *table = TOKEN(token_queue);
+            const db_id_t id = DB_ID_TOKEN(token_queue);
+
+            if (is_prefix(table, "publisher", 1)) {
+                if (!master_delete(db, id)) {
+                    printf("error: no such publisher\n");
+                }
                 goto cleanup;
             }
         }
