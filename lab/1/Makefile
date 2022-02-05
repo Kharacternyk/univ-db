@@ -1,4 +1,4 @@
-CFLAGS ?= -g -Wall
+CFLAGS ?= -g -Wall -Wno-unused-result
 LDLIBS += -lreadline
 
 bookstore: bookstore.o db.o
