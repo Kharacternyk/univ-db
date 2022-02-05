@@ -1,69 +1,45 @@
-/* clang-format off */
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
-#include <readline/readline.h>
-
 #include "db.h"
-#include "index.h"
-/* clang-format on */
 
-int main() {
-    const table_t publisher_table = {
-        .data = fopen("publisher.data", "w+"),
-        .index = fopen("publisher.index", "w+"),
-        .pool = fopen("publisher.pool", "w+"),
-    };
+#define FWRITE(data, file) fwrite(&data, sizeof data, 1, file)
+#define FREAD(data, file) fread(&data, sizeof data, 1, file)
 
+static long get_offset(FILE *index, db_id_t id) {
+    fseek(index, 0, SEEK_SET);
     for (;;) {
-        char *command = readline("db> ");
+        db_id_t current_id;
+        long offset = -1;
 
-        if (!command) {
-            break;
+        if (!FREAD(current_id, index)) {
+            return offset;
         }
 
-        char *token_queue = command;
-        const char *operation = TOKEN(token_queue);
+        FREAD(offset, index);
 
-        if (strcmp(operation, "insert") == 0) {
-            const char *table = TOKEN(token_queue);
-
-            if (strcmp(table, "publisher") == 0) {
-                publisher_t publisher = {};
-
-                DB_ID_TOKEN(publisher.id, token_queue);
-                DB_STR_TOKEN(publisher.name, token_queue);
-                DB_STR_TOKEN(publisher.country, token_queue);
-
-                fseek(publisher_table.data, 0, SEEK_END);
-                add_offset(publisher_table.index, publisher.id,
-                        ftell(publisher_table.data));
-                FWRITE(publisher, publisher_table.data);
-
-                goto cleanup;
-            }
+        if (current_id == id) {
+            return offset;
         }
-
-        if (strcmp(operation, "get") == 0) {
-            const char *table = TOKEN(token_queue);
-
-            if (strcmp(table, "publisher") == 0) {
-                publisher_t publisher;
-                db_id_t id;
-                DB_ID_TOKEN(id, token_queue);
-
-                const long offset = get_offset(publisher_table.index, id);
-                fseek(publisher_table.data, offset, SEEK_SET);
-                FREAD(publisher, publisher_table.data);
-
-                printf("%s %s\n", publisher.name, publisher.country);
-
-                goto cleanup;
-            }
-        }
-
-        printf("Invalid command\n");
-
-        cleanup: free(command);
     }
+}
+
+static void add_offset(FILE *index, db_id_t id, long offset) {
+    fseek(index, 0, SEEK_END);
+    FWRITE(id, index);
+    FWRITE(offset, index);
+}
+
+void master_insert(db_t db, db_id_t id, const void *data) {
+    fseek(db.master.data, 0, SEEK_END);
+    add_offset(db.master.index, id, ftell(db.master.data));
+    fwrite(data, db.master.record_size, 1, db.master.data);
+}
+
+int master_get(db_t db, db_id_t id, void *data) {
+    const long offset = get_offset(db.master.index, id);
+    if (offset == -1) {
+        return 0;
+    }
+
+    fseek(db.master.data, offset, SEEK_SET);
+    fread(data, db.master.record_size, 1, db.master.data);
+    return 1;
 }

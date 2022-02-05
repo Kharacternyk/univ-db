@@ -1,6 +1,6 @@
 CFLAGS ?= -g -Wall
 LDLIBS += -lreadline
 
-db: db.o index.o
-db.o: db.h index.h
-index.o: db.h index.h
+bookstore: bookstore.o db.o
+bookstore.o: db.h
+db.o: db.h
