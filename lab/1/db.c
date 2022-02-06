@@ -20,7 +20,7 @@ static long index_get(FILE *index, db_id_t id, int remove) {
 
     for (;;) {
         if (upper_bound == lower_bound) {
-            return -1;
+            return ERROR_UNEXISTS;
         }
 
         const long position = lower_bound + (upper_bound - lower_bound) / 2;
@@ -69,7 +69,7 @@ static int index_add(FILE *index, db_id_t id, long offset) {
         } else if (entry.id < id) {
             lower_bound = position + 1;
         } else {
-            return 0;
+            return ERROR_EXISTS;
         }
     }
 
@@ -90,7 +90,7 @@ static int index_add(FILE *index, db_id_t id, long offset) {
 
     FWRITE(entry, index);
 
-    return 1;
+    return OK;
 }
 
 static long pool_get(FILE *pool) {
@@ -98,7 +98,7 @@ static long pool_get(FILE *pool) {
     const long size = ftell(pool);
 
     if (!size) {
-        return -1;
+        return ERROR_UNEXISTS;
     }
 
     fseek(pool, -sizeof (long), SEEK_END);
@@ -119,55 +119,55 @@ int master_insert(db_t db, const master_record_t *record) {
     const long pool_offset = pool_get(db.master.pool);
     long offset;
 
-    if (pool_offset != -1) {
-        fseek(db.master.data, pool_offset, SEEK_SET);
-        offset = pool_offset;
-    } else {
+    if (pool_offset == ERROR_UNEXISTS) {
         fseek(db.master.data, 0, SEEK_END);
         offset = ftell(db.master.data);
+    } else {
+        fseek(db.master.data, pool_offset, SEEK_SET);
+        offset = pool_offset;
     }
 
-    if (!index_add(db.master.index, record->id, offset)) {
-        if (pool_offset != -1) {
+    if (index_add(db.master.index, record->id, offset) == ERROR_EXISTS) {
+        if (pool_offset != ERROR_UNEXISTS) {
             pool_add(db.master.pool, pool_offset);
         }
-        return 0;
+        return ERROR_EXISTS;
     }
 
     fwrite(record, db.master.record_size, 1, db.master.data);
-    return 1;
+    return OK;
 }
 
 int master_get(db_t db, master_record_t *record) {
     const long offset = index_get(db.master.index, record->id, 0);
-    if (offset == -1) {
-        return 0;
+    if (offset == ERROR_UNEXISTS) {
+        return ERROR_UNEXISTS;
     }
 
     fseek(db.master.data, offset, SEEK_SET);
     fread(record, db.master.record_size, 1, db.master.data);
-    return 1;
+    return OK;
 }
 
 int master_update(db_t db, const master_record_t *record) {
     const long offset = index_get(db.master.index, record->id, 0);
-    if (offset == -1) {
-        return 0;
+    if (offset == ERROR_UNEXISTS) {
+        return ERROR_UNEXISTS;
     }
 
     fseek(db.master.data, offset, SEEK_SET);
     fwrite(record, db.master.record_size, 1, db.master.data);
-    return 1;
+    return OK;
 }
 
 int master_delete(db_t db, db_id_t id) {
     const long offset = index_get(db.master.index, id, 1);
-    if (offset == -1) {
-        return 0;
+    if (offset == ERROR_UNEXISTS) {
+        return ERROR_UNEXISTS;
     }
 
     pool_add(db.master.pool, offset);
-    return 1;
+    return OK;
 }
 
 long master_count(db_t db) {

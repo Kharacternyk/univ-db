@@ -1,7 +1,12 @@
 #include <stdio.h>
 #include <stdint.h>
 
-typedef int64_t db_id_t;
+#define OK 0
+#define ERROR_EXISTS -1
+#define ERROR_UNEXISTS -2
+
+typedef unsigned long db_id_t;
+typedef unsigned long db_uint_t;
 
 typedef struct {
     FILE *data;
@@ -18,6 +23,7 @@ typedef struct {
 typedef struct {
     db_id_t id;
     db_id_t slave_id;
+    db_uint_t slave_count;
 } master_record_t;
 
 typedef struct {
