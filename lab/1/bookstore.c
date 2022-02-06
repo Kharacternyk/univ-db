@@ -13,9 +13,9 @@
 #define DB_STR_TOKEN(dest, queue) strncpy(dest, TOKEN(queue), DB_STR_LEN)
 #define DB_STR_LEN 128
 
-#define EXISTS(type) printf("error: %s exists\n", type)
-#define NO(instance) printf("error: no such %s: %s\n", #instance, instance)
-#define NO_TYPE(type) printf("error: no such %s\n", type)
+#define EXISTS(type) printf("error: %s exists\n\n", type)
+#define NO(instance) printf("error: no such %s: %s\n\n", #instance, instance)
+#define NO_TYPE(type) printf("error: no such %s\n\n", type)
 
 typedef char db_str_t[DB_STR_LEN];
 
@@ -37,6 +37,24 @@ static int is_prefix(const char *prefix, const char *string, size_t min_length) 
     return length >= min_length && strncmp(prefix, string, length) == 0;
 }
 
+void print_publisher(publisher_t publisher) {
+    printf( "publisher #%ld\n"
+            "name: %s\n"
+            "country: %s\n"
+            "books: %lu\n"
+            "\n",
+            publisher.meta.id, publisher.name, publisher.country, publisher.meta.slave_count);
+}
+
+void print_book(book_t book) {
+    printf( "book #%ld\n"
+            "title: %s\n"
+            "year: %lu\n"
+            "price: %lu\n"
+            "\n",
+            book.meta.id, book.title, book.year, book.price);
+}
+
 int main() {
     const db_t db = {
         .master = {
@@ -54,7 +72,7 @@ int main() {
     };
 
     for (;;) {
-        char *command = readline("\nbookstore> ");
+        char *command = readline("bookstore> ");
 
         if (!command) {
             break;
@@ -112,10 +130,16 @@ int main() {
                 if (master_get(db, &publisher.meta) == ERROR_UNEXISTS) {
                     NO_TYPE("publisher");
                 } else {
-                    printf("name: %s\n"
-                           "country: %s\n"
-                           "books: %lu\n",
-                           publisher.name, publisher.country, publisher.meta.slave_count);
+                    print_publisher(publisher);
+
+                    while (publisher.meta.slave_count--) {
+                        book_t book = {
+                            .meta.id = publisher.meta.slave_id
+                        };
+                        slave_get(db, &book.meta);
+                        print_book(book);
+                        publisher.meta.slave_id = book.meta.next;
+                    }
                 }
             } else if (is_prefix(table, "book", 1)) {
                 book_t book = {
@@ -125,11 +149,12 @@ int main() {
                 if (slave_get(db, &book.meta) == ERROR_UNEXISTS) {
                     NO_TYPE("book");
                 } else {
-                    printf("title: %s\n"
-                           "year: %lu\n"
-                           "price: %lu\n"
-                           "publisher: %lu\n",
-                           book.title, book.year, book.price, book.meta.master_id);
+                    publisher_t publisher = {
+                        .meta.id = book.meta.master_id
+                    };
+                    master_get(db, &publisher.meta);
+                    print_book(book);
+                    print_publisher(publisher);
                 }
             } else {
                 NO(table);
