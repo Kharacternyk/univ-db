@@ -37,3 +37,6 @@ int master_get(db_t db, master_record_t *record);
 int master_update(db_t db, const master_record_t *record);
 int master_delete(db_t db, db_id_t id);
 long master_count(db_t db);
+
+int slave_insert(db_t db, slave_record_t *record);
+int slave_get(db_t db, slave_record_t *record);

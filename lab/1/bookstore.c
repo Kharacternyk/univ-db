@@ -78,6 +78,25 @@ int main() {
                 if (master_insert(db, &publisher.meta) == ERROR_EXISTS) {
                     EXISTS("publisher");
                 }
+            } else if (is_prefix(table, "book", 1)) {
+                book_t book = {
+                    .meta = {
+                        .id = id,
+                        .master_id = DB_ID_TOKEN(token_queue),
+                    }
+                };
+
+                DB_STR_TOKEN(book.title, token_queue);
+                DB_UINT_TOKEN(book.year, token_queue);
+                DB_UINT_TOKEN(book.price, token_queue);
+
+                const int status = slave_insert(db, &book.meta);
+
+                if (status == ERROR_EXISTS) {
+                    EXISTS("book");
+                } else if (status == ERROR_UNEXISTS) {
+                    NO_TYPE("publisher");
+                }
             } else {
                 NO(table);
             }
@@ -93,7 +112,24 @@ int main() {
                 if (master_get(db, &publisher.meta) == ERROR_UNEXISTS) {
                     NO_TYPE("publisher");
                 } else {
-                    printf("name: %s\ncountry: %s\n", publisher.name, publisher.country);
+                    printf("name: %s\n"
+                           "country: %s\n"
+                           "books: %lu\n",
+                           publisher.name, publisher.country, publisher.meta.slave_count);
+                }
+            } else if (is_prefix(table, "book", 1)) {
+                book_t book = {
+                    .meta.id = id
+                };
+
+                if (slave_get(db, &book.meta) == ERROR_UNEXISTS) {
+                    NO_TYPE("book");
+                } else {
+                    printf("title: %s\n"
+                           "year: %lu\n"
+                           "price: %lu\n"
+                           "publisher: %lu\n",
+                           book.title, book.year, book.price, book.meta.master_id);
                 }
             } else {
                 NO(table);
