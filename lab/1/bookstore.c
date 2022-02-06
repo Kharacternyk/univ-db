@@ -211,6 +211,8 @@ int main() {
 
             if (is_prefix(table, "publishers", 1)) {
                 printf("count: %ld\n", master_count(db));
+            } else if (is_prefix(table, "books", 1)) {
+                printf("count: %ld\n", slave_count(db));
             } else {
                 NO(table);
             }

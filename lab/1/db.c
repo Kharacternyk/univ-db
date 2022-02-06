@@ -210,3 +210,7 @@ int slave_insert(db_t db, slave_record_t *record) {
 int slave_get(db_t db, slave_record_t *record) {
     return get(db.slave, record, record->id);
 }
+
+long slave_count(db_t db) {
+    return index_count(db.slave.index);
+}

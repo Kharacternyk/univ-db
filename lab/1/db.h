@@ -40,3 +40,4 @@ long master_count(db_t db);
 
 int slave_insert(db_t db, slave_record_t *record);
 int slave_get(db_t db, slave_record_t *record);
+long slave_count(db_t db);
