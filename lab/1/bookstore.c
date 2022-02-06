@@ -13,6 +13,10 @@
 #define DB_STR_TOKEN(dest, queue) strncpy(dest, TOKEN(queue), DB_STR_LEN)
 #define DB_STR_LEN 128
 
+#define EXISTS(type) printf("error: %s exists\n", type)
+#define NO(instance) printf("error: no such %s: %s\n", #instance, instance)
+#define NO_TYPE(type) printf("error: no such %s\n", type)
+
 typedef char db_str_t[DB_STR_LEN];
 typedef int32_t db_int_t;
 
@@ -73,14 +77,12 @@ int main() {
                 DB_STR_TOKEN(publisher.country, token_queue);
 
                 if (!master_insert(db, &publisher.meta)) {
-                    printf("error: publisher exists\n");
+                    EXISTS("publisher");
                 }
-
-                goto cleanup;
+            } else {
+                NO(table);
             }
-        }
-
-        if (is_prefix(operation, "get", 1)) {
+        } else if (is_prefix(operation, "get", 1)) {
             const char *const table = TOKEN(token_queue);
             const db_id_t id = DB_ID_TOKEN(token_queue);
 
@@ -92,14 +94,12 @@ int main() {
                 if (master_get(db, &publisher.meta)) {
                     printf("name: %s\ncountry: %s\n", publisher.name, publisher.country);
                 } else {
-                    printf("error: no such publisher\n");
+                    NO_TYPE("publisher");
                 }
-
-                goto cleanup;
+            } else {
+                NO(table);
             }
-        }
-
-        if (is_prefix(operation, "update", 1)) {
+        } else if (is_prefix(operation, "update", 1)) {
             const char *const table = TOKEN(token_queue);
             const db_id_t id = DB_ID_TOKEN(token_queue);
 
@@ -109,54 +109,55 @@ int main() {
                 };
 
                 if (!master_get(db, &publisher.meta)) {
-                    printf("error: no such publisher\n");
-                    goto cleanup;
-                }
+                    NO_TYPE("publisher");
+                } else {
+                    const char *field = TOKEN(token_queue);
+                    int success = 1;
 
-                const char *field = TOKEN(token_queue);
+                    while (*field) {
+                        if (is_prefix(field, "name", 1)) {
+                            DB_STR_TOKEN(publisher.name, token_queue);
+                        } else if (is_prefix(field, "country", 1)) {
+                            DB_STR_TOKEN(publisher.country, token_queue);
+                        } else {
+                            NO(field);
+                            success = 0;
+                            break;
+                        }
 
-                while (*field) {
-                    if (is_prefix(field, "name", 1)) {
-                        DB_STR_TOKEN(publisher.name, token_queue);
-                    } else if (is_prefix(field, "country", 1)) {
-                        DB_STR_TOKEN(publisher.country, token_queue);
-                    } else {
-                        printf("error: no such field\n");
-                        goto cleanup;
+                        field = TOKEN(token_queue);
                     }
 
-                    field = TOKEN(token_queue);
+                    if (success) {
+                        master_update(db, &publisher.meta);
+                    }
                 }
-
-                master_update(db, &publisher.meta);
-
-                goto cleanup;
+            } else {
+                NO(table);
             }
-        }
-
-        if (is_prefix(operation, "delete", 1)) {
+        } else if (is_prefix(operation, "delete", 1)) {
             const char *table = TOKEN(token_queue);
             const db_id_t id = DB_ID_TOKEN(token_queue);
 
             if (is_prefix(table, "publisher", 1)) {
                 if (!master_delete(db, id)) {
-                    printf("error: no such publisher\n");
+                    NO_TYPE("publisher");
                 }
-                goto cleanup;
+            } else {
+                NO(table);
             }
-        }
-
-        if (is_prefix(operation, "count", 1)) {
+        } else if (is_prefix(operation, "count", 1)) {
             const char *table = TOKEN(token_queue);
 
             if (is_prefix(table, "publishers", 1)) {
                 printf("count: %ld\n", master_count(db));
-                goto cleanup;
+            } else {
+                NO(table);
             }
+        } else {
+            NO(operation);
         }
 
-        printf("error: invalid command\n");
-
-        cleanup: free(command);
+        free(command);
     }
 }
