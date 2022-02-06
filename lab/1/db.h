@@ -27,6 +27,7 @@ typedef struct {
 } slave_record_t;
 
 int master_insert(db_t db, const master_record_t *record);
-int master_get(db_t db, db_id_t id, master_record_t *record);
+int master_get(db_t db, master_record_t *record);
+int master_update(db_t db, const master_record_t *record);
 int master_delete(db_t db, db_id_t id);
 long master_count(db_t db);

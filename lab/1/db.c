@@ -138,14 +138,25 @@ int master_insert(db_t db, const master_record_t *record) {
     return 1;
 }
 
-int master_get(db_t db, db_id_t id, master_record_t *record) {
-    const long offset = index_get(db.master.index, id, 0);
+int master_get(db_t db, master_record_t *record) {
+    const long offset = index_get(db.master.index, record->id, 0);
     if (offset == -1) {
         return 0;
     }
 
     fseek(db.master.data, offset, SEEK_SET);
     fread(record, db.master.record_size, 1, db.master.data);
+    return 1;
+}
+
+int master_update(db_t db, const master_record_t *record) {
+    const long offset = index_get(db.master.index, record->id, 0);
+    if (offset == -1) {
+        return 0;
+    }
+
+    fseek(db.master.data, offset, SEEK_SET);
+    fwrite(record, db.master.record_size, 1, db.master.data);
     return 1;
 }
 
