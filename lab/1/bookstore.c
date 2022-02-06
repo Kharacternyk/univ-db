@@ -192,22 +192,57 @@ int main() {
                         master_update(db, &publisher.meta);
                     }
                 }
+            } else if (is_prefix(table, "book", 1)) {
+                book_t book = {
+                    .meta.id = id
+                };
+
+                if (slave_get(db, &book.meta) == ERROR_UNEXISTS) {
+                    NO_TYPE("book");
+                } else {
+                    const char *field = TOKEN(token_queue);
+                    int success = 1;
+
+                    while (*field) {
+                        if (is_prefix(field, "title", 1)) {
+                            DB_STR_TOKEN(book.title, token_queue);
+                        } else if (is_prefix(field, "year", 1)) {
+                            DB_UINT_TOKEN(book.year, token_queue);
+                        } else if (is_prefix(field, "price", 1)) {
+                            DB_UINT_TOKEN(book.price, token_queue);
+                        } else {
+                            NO(field);
+                            success = 0;
+                            break;
+                        }
+
+                        field = TOKEN(token_queue);
+                    }
+
+                    if (success) {
+                        slave_update(db, &book.meta);
+                    }
+                }
             } else {
                 NO(table);
             }
         } else if (is_prefix(operation, "delete", 1)) {
-            const char *table = TOKEN(token_queue);
+            const char *const table = TOKEN(token_queue);
             const db_id_t id = DB_ID_TOKEN(token_queue);
 
             if (is_prefix(table, "publisher", 1)) {
                 if (master_delete(db, id) == ERROR_UNEXISTS) {
                     NO_TYPE("publisher");
                 }
+            } else if (is_prefix(table, "book", 1)) {
+                if (slave_delete(db, id) == ERROR_UNEXISTS) {
+                    NO_TYPE("book");
+                }
             } else {
                 NO(table);
             }
         } else if (is_prefix(operation, "count", 1)) {
-            const char *table = TOKEN(token_queue);
+            const char *const table = TOKEN(token_queue);
 
             if (is_prefix(table, "publishers", 1)) {
                 printf("count: %ld\n", master_count(db));
