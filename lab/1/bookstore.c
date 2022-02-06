@@ -16,9 +16,9 @@
     substitute_underscores(dest); \
 } while(0)
 
-#define EXISTS(type) printf("error: %s exists\n\n", type)
-#define NO(instance) printf("error: no such %s: %s\n\n", #instance, instance)
-#define NO_TYPE(type) printf("error: no such %s\n\n", type)
+#define EXISTS(type)  printf("error:    %s exists\n\n", type)
+#define NO(instance)  printf("error:    no such %s: %s\n\n", #instance, instance)
+#define NO_TYPE(type) printf("error:    no such %s\n\n", type)
 
 typedef char db_str_t[DB_STR_LEN];
 
@@ -49,19 +49,21 @@ static void substitute_underscores(char *str) {
 }
 
 static void print_publisher(publisher_t publisher) {
-    printf( "publisher #%ld\n"
-            "name: %s\n"
+    printf( "-------- publisher\n"
+            "id:      %ld\n"
+            "name:    %s\n"
             "country: %s\n"
-            "books: %lu\n"
+            "books:   %lu\n"
             "\n",
             publisher.meta.id, publisher.name, publisher.country, publisher.meta.slave_count);
 }
 
 static void print_book(book_t book) {
-    printf( "book #%ld\n"
-            "title: %s\n"
-            "year: %lu\n"
-            "price: %lu\n"
+    printf( "-------- book\n"
+            "id:      %ld\n"
+            "title:   %s\n"
+            "year:    %lu\n"
+            "price:   %lu\n"
             "\n",
             book.meta.id, book.title, book.year, book.price);
 }
@@ -83,7 +85,7 @@ int main() {
     };
 
     for (;;) {
-        char *command = readline("bookstore> ");
+        char *command = readline(">>>>>>>> ");
 
         if (!command) {
             break;
@@ -256,9 +258,9 @@ int main() {
             const char *const table = TOKEN(token_queue);
 
             if (is_prefix(table, "publishers", 1)) {
-                printf("count: %ld\n", master_count(db));
+                printf("count:   %ld\n\n", master_count(db));
             } else if (is_prefix(table, "books", 1)) {
-                printf("count: %ld\n", slave_count(db));
+                printf("count:   %ld\n\n", slave_count(db));
             } else {
                 NO(table);
             }
